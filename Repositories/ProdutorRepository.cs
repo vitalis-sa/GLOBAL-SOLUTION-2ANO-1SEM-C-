@@ -76,8 +76,27 @@ public class ProdutorRepository : IProdutorRepository
         var produtor = GetById(id);
         if (produtor != null)
         {
-            _context.Produtores.Remove(produtor);
-            _context.SaveChanges();
+            var conn = _context.Database.GetDbConnection();
+            if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+            using (var cmd = conn.CreateCommand())
+            {
+                cmd.CommandText = @"
+BEGIN
+    DELETE FROM ALERTA WHERE PROPRIEDADE_ID IN (SELECT ID FROM PROPRIEDADE WHERE PRODUTOR_ID = :id);
+    DELETE FROM LEITURA_CLIMA WHERE DISPOSITIVO_IOT_ID IN (SELECT ID FROM DISPOSITIVO_IOT WHERE PROPRIEDADE_ID IN (SELECT ID FROM PROPRIEDADE WHERE PRODUTOR_ID = :id));
+    DELETE FROM LEITURA_LUZ WHERE DISPOSITIVO_IOT_ID IN (SELECT ID FROM DISPOSITIVO_IOT WHERE PROPRIEDADE_ID IN (SELECT ID FROM PROPRIEDADE WHERE PRODUTOR_ID = :id));
+    DELETE FROM DISPOSITIVO_IOT WHERE PROPRIEDADE_ID IN (SELECT ID FROM PROPRIEDADE WHERE PRODUTOR_ID = :id);
+    DELETE FROM PRODUTOR_COOPERATIVA WHERE PRODUTOR_ID = :id;
+    DELETE FROM PROPRIEDADE WHERE PRODUTOR_ID = :id;
+    DELETE FROM PRODUTOR WHERE ID = :id;
+END;";
+                var pId = cmd.CreateParameter();
+                pId.ParameterName = "id";
+                pId.Value = id;
+                cmd.Parameters.Add(pId);
+                
+                cmd.ExecuteNonQuery();
+            }
         }
     }
 }
