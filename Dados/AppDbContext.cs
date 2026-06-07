@@ -15,7 +15,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Produtor>(entity =>
         {
             entity.Property(e => e.Id)
-                  .UseIdentityColumn();
+                  .ValueGeneratedNever();
 
             entity.HasIndex(e => e.Cpf)
                   .IsUnique()
@@ -32,7 +32,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Cooperativa>(entity =>
         {
             entity.Property(e => e.Id)
-                  .UseIdentityColumn();
+                  .ValueGeneratedNever();
 
             entity.Property(e => e.DataCadastro)
                   .HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -41,7 +41,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Plano>(entity =>
         {
             entity.Property(e => e.Id)
-                  .UseIdentityColumn();
+                  .ValueGeneratedNever();
 
             entity.Property(e => e.ValorMensalidade)
                   .HasPrecision(10, 2);
@@ -50,7 +50,7 @@ public class AppDbContext : DbContext
         modelBuilder.Entity<Propriedade>(entity =>
         {
             entity.Property(e => e.Id)
-                  .UseIdentityColumn();
+                  .ValueGeneratedNever();
 
             entity.Property(e => e.AreaHectares);
 

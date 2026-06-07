@@ -19,6 +19,7 @@ public class CooperativaRepository : ICooperativaRepository
 
     public void Add(Cooperativa cooperativa)
     {
+        cooperativa.Id = _context.Database.SqlQueryRaw<int>("SELECT SQ_COOPERATIVA.NEXTVAL as \"Value\" FROM DUAL").First();
         cooperativa.DataCadastro = DateTime.UtcNow;
         _context.Cooperativas.Add(cooperativa);
         _context.SaveChanges();

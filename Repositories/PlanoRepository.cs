@@ -19,6 +19,7 @@ public class PlanoRepository : IPlanoRepository
 
     public void Add(Plano plano)
     {
+        plano.Id = _context.Database.SqlQueryRaw<int>("SELECT SQ_PLANO.NEXTVAL as \"Value\" FROM DUAL").First();
         _context.Planos.Add(plano);
         _context.SaveChanges();
     }

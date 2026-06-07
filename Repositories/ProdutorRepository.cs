@@ -53,6 +53,7 @@ public class ProdutorRepository : IProdutorRepository
 
     public void Add(Produtor produtor)
     {
+        produtor.Id = _context.Database.SqlQueryRaw<int>("SELECT SQ_PRODUTOR.NEXTVAL as \"Value\" FROM DUAL").First();
         produtor.DataCadastro = DateTime.UtcNow;
         _context.Produtores.Add(produtor);
         _context.SaveChanges();
