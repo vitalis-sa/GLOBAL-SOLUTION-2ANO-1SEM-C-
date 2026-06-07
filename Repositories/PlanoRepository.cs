@@ -1,4 +1,5 @@
 using HyDrata.GestaoApi.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 public class PlanoRepository : IPlanoRepository
 {
@@ -19,7 +20,13 @@ public class PlanoRepository : IPlanoRepository
 
     public void Add(Plano plano)
     {
-        plano.Id = _context.Database.SqlQueryRaw<int>("SELECT SQ_PLANO.NEXTVAL as \"Value\" FROM DUAL").First();
+        var conn = _context.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT SQ_PLANO.NEXTVAL FROM DUAL";
+            plano.Id = Convert.ToInt32(cmd.ExecuteScalar());
+        }
         _context.Planos.Add(plano);
         _context.SaveChanges();
     }

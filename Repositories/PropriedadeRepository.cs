@@ -33,7 +33,13 @@ public class PropriedadeRepository : IPropriedadeRepository
 
     public void Add(Propriedade propriedade)
     {
-        propriedade.Id = _context.Database.SqlQueryRaw<int>("SELECT SQ_PROPRIEDADE.NEXTVAL as \"Value\" FROM DUAL").First();
+        var conn = _context.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT SQ_PROPRIEDADE.NEXTVAL FROM DUAL";
+            propriedade.Id = Convert.ToInt32(cmd.ExecuteScalar());
+        }
         propriedade.DataCadastro = DateTime.UtcNow;
         _context.Propriedades.Add(propriedade);
         _context.SaveChanges();

@@ -1,4 +1,5 @@
 using HyDrata.GestaoApi.Repositories;
+using Microsoft.EntityFrameworkCore;
 
 public class CooperativaRepository : ICooperativaRepository
 {
@@ -19,7 +20,13 @@ public class CooperativaRepository : ICooperativaRepository
 
     public void Add(Cooperativa cooperativa)
     {
-        cooperativa.Id = _context.Database.SqlQueryRaw<int>("SELECT SQ_COOPERATIVA.NEXTVAL as \"Value\" FROM DUAL").First();
+        var conn = _context.Database.GetDbConnection();
+        if (conn.State != System.Data.ConnectionState.Open) conn.Open();
+        using (var cmd = conn.CreateCommand())
+        {
+            cmd.CommandText = "SELECT SQ_COOPERATIVA.NEXTVAL FROM DUAL";
+            cooperativa.Id = Convert.ToInt32(cmd.ExecuteScalar());
+        }
         cooperativa.DataCadastro = DateTime.UtcNow;
         _context.Cooperativas.Add(cooperativa);
         _context.SaveChanges();
