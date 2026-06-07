@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-[Table("TB_PROPRIEDADES")]
+[Table("PROPRIEDADE")]
 public class Propriedade
 {
     [Key]
@@ -26,7 +26,7 @@ public class Propriedade
 
     [Column("AREA_HECTARES")]
     [Required]
-    public decimal AreaHectares { get; set; }
+    public double AreaHectares { get; set; }
 
     [Column("CIDADE")]
     [StringLength(100)]
@@ -37,10 +37,10 @@ public class Propriedade
     public string? Estado { get; set; }
 
     [Column("LATITUDE")]
-    public decimal? Latitude { get; set; }
+    public double? Latitude { get; set; }
 
     [Column("LONGITUDE")]
-    public decimal? Longitude { get; set; }
+    public double? Longitude { get; set; }
 
     [Column("STATUS")]
     [StringLength(30)]

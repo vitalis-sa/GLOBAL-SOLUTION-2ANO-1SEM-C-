@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-[Table("TB_PRODUTORES")]
+[Table("PRODUTOR")]
 public class Produtor
 {
     [Key]

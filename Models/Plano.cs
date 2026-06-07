@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-[Table("TB_PLANOS")]
+[Table("PLANO")]
 public class Plano
 {
     [Key]

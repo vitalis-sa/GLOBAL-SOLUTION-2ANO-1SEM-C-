@@ -26,6 +26,11 @@ public class ProdutorRepository : IProdutorRepository
             .AsNoTracking()
             .FirstOrDefault(p => p.Id == id);
 
+    public Produtor? GetByEmail(string email)
+        => _context.Produtores
+            .AsNoTracking()
+            .FirstOrDefault(p => p.Email == email);
+
     public bool CpfExiste(string cpf, int? ignorarId = null)
         => _context.Produtores
             .Any(p => p.Cpf == cpf && (!ignorarId.HasValue || p.Id != ignorarId.Value));

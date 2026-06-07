@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
 // Tabela de junção para o relacionamento N:N entre Produtor e Cooperativa.
-[Table("TB_PRODUTOR_COOPERATIVA")]
+[Table("PRODUTOR_COOPERATIVA")]
 public class ProdutorCooperativa
 {
     [Column("PRODUTOR_ID")]

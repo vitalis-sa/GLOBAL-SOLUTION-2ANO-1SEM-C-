@@ -53,6 +53,19 @@ public class ProdutoresApiController : ControllerBase
         });
     }
 
+    [HttpGet("email/{email}")]
+    public IActionResult GetByEmail(string email)
+    {
+        var produtor = _repo.GetByEmail(email);
+        if (produtor == null) return NotFound($"Produtor com e-mail '{email}' não encontrado.");
+
+        return Ok(new
+        {
+            produtor.Id, produtor.Nome, produtor.Cpf,
+            produtor.Email, produtor.Telefone, produtor.Status, produtor.DataCadastro
+        });
+    }
+
     [HttpPost]
     public IActionResult Cadastrar([FromBody] CadastrarProdutorDto dto)
     {

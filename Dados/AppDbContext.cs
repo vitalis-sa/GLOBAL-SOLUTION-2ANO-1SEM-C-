@@ -52,14 +52,11 @@ public class AppDbContext : DbContext
             entity.Property(e => e.Id)
                   .UseIdentityColumn();
 
-            entity.Property(e => e.AreaHectares)
-                  .HasPrecision(10, 2);
+            entity.Property(e => e.AreaHectares);
 
-            entity.Property(e => e.Latitude)
-                  .HasPrecision(9, 6);
+            entity.Property(e => e.Latitude);
 
-            entity.Property(e => e.Longitude)
-                  .HasPrecision(9, 6);
+            entity.Property(e => e.Longitude);
 
             entity.Property(e => e.DataCadastro)
                   .HasDefaultValueSql("CURRENT_TIMESTAMP");

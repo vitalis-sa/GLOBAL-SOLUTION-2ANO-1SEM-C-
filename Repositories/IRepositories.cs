@@ -5,6 +5,7 @@ public interface IProdutorRepository
     IEnumerable<Produtor> GetAll();
     Produtor? GetById(int id);
     Produtor? GetByIdComPropriedades(int id);
+    Produtor? GetByEmail(string email);
     bool CpfExiste(string cpf, int? ignorarId = null);
     bool EmailExiste(string email, int? ignorarId = null);
     void Add(Produtor produtor);
