@@ -32,12 +32,24 @@ public class ProdutorRepository : IProdutorRepository
             .FirstOrDefault(p => p.Email == email);
 
     public bool CpfExiste(string cpf, int? ignorarId = null)
-        => _context.Produtores
-            .Any(p => p.Cpf == cpf && (!ignorarId.HasValue || p.Id != ignorarId.Value));
+    {
+        var query = _context.Produtores.Where(p => p.Cpf == cpf);
+        if (ignorarId.HasValue)
+        {
+            query = query.Where(p => p.Id != ignorarId.Value);
+        }
+        return query.Count() > 0;
+    }
 
     public bool EmailExiste(string email, int? ignorarId = null)
-        => _context.Produtores
-            .Any(p => p.Email == email && (!ignorarId.HasValue || p.Id != ignorarId.Value));
+    {
+        var query = _context.Produtores.Where(p => p.Email == email);
+        if (ignorarId.HasValue)
+        {
+            query = query.Where(p => p.Id != ignorarId.Value);
+        }
+        return query.Count() > 0;
+    }
 
     public void Add(Produtor produtor)
     {

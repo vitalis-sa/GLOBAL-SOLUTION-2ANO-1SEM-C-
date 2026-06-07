@@ -39,7 +39,7 @@ public class ProdutorCooperativaRepository : IProdutorCooperativaRepository
 
     public bool ExisteAssociacao(int produtorId, int cooperativaId)
         => _context.ProdutorCooperativas
-            .Any(pc => pc.ProdutorId == produtorId && pc.CooperativaId == cooperativaId);
+            .Count(pc => pc.ProdutorId == produtorId && pc.CooperativaId == cooperativaId) > 0;
 
     public void Add(ProdutorCooperativa associacao)
     {
