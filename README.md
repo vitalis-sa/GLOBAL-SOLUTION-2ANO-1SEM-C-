@@ -164,8 +164,8 @@ Um produtor pode pertencer a várias cooperativas, e vice-versa. Implementado vi
 ### 1. Clonar o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/GLOBAL-SOLUTION-2ANO-1SEM-Csharp.git
-cd GLOBAL-SOLUTION-2ANO-1SEM-Csharp
+git clone https://github.com/vitalis-sa/GLOBAL-SOLUTION-2ANO-1SEM-C-
+cd GLOBAL-SOLUTION-2ANO-1SEM-C-
 ```
 
 ### 2. Configurar a connection string
@@ -472,6 +472,9 @@ Acesse o Swagger em: **http://localhost:5000/swagger**
 
 ## Modelagem de Dados Completa
 
+<img width="995" height="659" alt="WhatsApp Image 2026-06-08 at 22 36 45" src="https://github.com/user-attachments/assets/74c1fc53-91f0-411f-80cc-78523d08f9a8" />
+
+<img width="995" height="659" alt="WhatsApp Image 2026-06-08 at 22 36 45 (1)" src="https://github.com/user-attachments/assets/2e3279dd-8b98-4929-b54d-d7c02d1c63a2" />
 
 
 *HyDrata — Global Solution 2026/1 — FIAP — Análise e Desenvolvimento de Sistemas*
