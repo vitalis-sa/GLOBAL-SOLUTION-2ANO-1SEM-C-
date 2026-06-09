@@ -1,8 +1,25 @@
-# HyDrata – API de Gestão
+# HyDrata – API de Gestão (.NET)
 
-API REST administrativa do sistema **HyDrata**, responsável pelo cadastro de produtores rurais, cooperativas, planos de assinatura e propriedades.
+> Módulo administrativo da plataforma **HyDrata** — sistema de monitoramento hídrico e otimização de irrigação para pequenos e médios produtores rurais.
 
-Desenvolvida em **.NET 9** com **ASP.NET Core Web API**, **Entity Framework Core** e banco de dados **Oracle**.
+O HyDrata cruza dados de satélites (ANA, INPE) com sensores ESP32 instalados no campo para responder uma pergunta simples ao produtor: **IRRIGAR HOJE? SIM ou NÃO.** Esta API é responsável pelo cadastro e gestão de produtores, cooperativas, planos de assinatura e propriedades rurais — o módulo administrativo da plataforma.
+
+---
+
+## Contexto da Solução Completa
+
+O HyDrata é composto por múltiplas disciplinas que trabalham em conjunto:
+
+| Camada | Tecnologia | Responsabilidade |
+|---|---|---|
+| **IoT** | ESP32 + MQTT | Sensor de umidade do solo e luminosidade no campo |
+| **API Core** | Java Spring Boot | Consome ANA/INPE/Open-Meteo, processa regras de irrigação, gera alertas |
+| **API Gestão** | **.NET 9 (este repositório)** | CRUD de produtores, cooperativas, planos e propriedades |
+| **Banco de Dados** | Oracle + PL/SQL | Procedures, triggers e packages com regras de negócio |
+| **Mobile** | React Native | 5 telas — dashboard, alertas, histórico, mapa e cadastro |
+| **DevOps** | Docker + Azure | Containers da API Java e Oracle em nuvem |
+
+> Esta API `.NET` **não interage** com as tabelas de monitoramento (`ALERTA`, `LEITURA_CLIMA`, `LEITURA_LUZ`, `DISPOSITIVO_IOT`). Essas tabelas são responsabilidade exclusiva da API Java. O `.NET` gerencia apenas as **5 tabelas de gestão** descritas abaixo.
 
 ---
 
@@ -19,7 +36,7 @@ Desenvolvida em **.NET 9** com **ASP.NET Core Web API**, **Entity Framework Core
 
 ## Arquitetura
 
-O projeto adota arquitetura em **3 camadas**, com separação clara de responsabilidades:
+O projeto adota arquitetura em **3 camadas**:
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -34,7 +51,7 @@ O projeto adota arquitetura em **3 camadas**, com separação clara de responsab
 ### Estrutura de Pastas
 
 ```
-HyDrata_Vitalis/
+GLOBAL-SOLUTION-2ANO-1SEM-C#/
 ├── Controllers/
 │   ├── ProdutoresApiController.cs
 │   ├── CooperativasApiController.cs
@@ -62,9 +79,8 @@ HyDrata_Vitalis/
 │   └── ProdutorCooperativa.cs
 ├── Dados/
 │   └── AppDbContext.cs
-├── Properties/
-│   └── launchSettings.json
 ├── Migrations/                       (gerado pelo EF Core)
+├── Dockerfile
 ├── Program.cs
 ├── appsettings.json
 └── appsettings.Development.json
@@ -74,36 +90,49 @@ HyDrata_Vitalis/
 
 ## Modelagem do Banco
 
-### Diagrama de Entidades
+### Diagrama de Entidades (tabelas gerenciadas por esta API)
+
+> 
 
 ```
-┌──────────────┐       1:N      ┌──────────────────┐
-│   TB_PLANOS  │──────────────►│  TB_PROPRIEDADES  │
-└──────────────┘                └──────────────────┘
-                                        ▲  N:1
-                                        │
-┌──────────────┐       1:N      ┌───────┴──────────┐
-│ TB_PRODUTORES│──────────────►│  TB_PROPRIEDADES  │
-│              │                └──────────────────┘
-│              │   N:N via      ┌──────────────────────────┐
-│              │──────────────►│  TB_PRODUTOR_COOPERATIVA  │◄──┐
-└──────────────┘                │  ProdutorId (PK, FK)     │   │
-                                │  CooperativaId (PK, FK)  │   │
-                                └──────────────────────────┘   │
-                                                  ┌───────────────┐
-                                                  │TB_COOPERATIVAS│
-                                                  └───────────────┘
+┌──────────────┐        1:N        ┌──────────────────┐
+│    PLANO     │─────────────────►│   PROPRIEDADE     │
+└──────────────┘                   └──────────────────┘
+                                           ▲  N:1
+                                           │
+┌──────────────┐        1:N        ┌───────┴──────────┐
+│   PRODUTOR   │─────────────────►│   PROPRIEDADE     │
+│              │                   └──────────────────┘
+│              │  N:N (via junção) ┌──────────────────────────┐
+│              │─────────────────►│   PRODUTOR_COOPERATIVA   │◄──┐
+└──────────────┘                   │   ProdutorId (PK, FK)    │   │
+                                   │   CooperativaId (PK, FK) │   │
+                                   └──────────────────────────┘   │
+                                                     ┌────────────┴──┐
+                                                     │  COOPERATIVA  │
+                                                     └───────────────┘
 ```
 
-### Tabelas
+### Tabelas gerenciadas por esta API
 
-| Tabela | Descrição |
+| Tabela Oracle | Descrição |
 |---|---|
-| `TB_PRODUTORES` | Produtores rurais cadastrados no sistema |
-| `TB_COOPERATIVAS` | Cooperativas agrícolas |
-| `TB_PLANOS` | Planos de assinatura disponíveis |
-| `TB_PROPRIEDADES` | Propriedades rurais vinculadas a produtor e plano |
-| `TB_PRODUTOR_COOPERATIVA` | Tabela de junção para o N:N Produtor ↔ Cooperativa |
+| `PRODUTOR` | Produtores rurais cadastrados no sistema |
+| `COOPERATIVA` | Cooperativas agrícolas parceiras |
+| `PLANO` | Planos de assinatura (Básico R$49, Pro R$99, Cooperativa R$29) |
+| `PROPRIEDADE` | Propriedades rurais monitoradas, vinculadas a produtor e plano |
+| `PRODUTOR_COOPERATIVA` | Tabela de junção para o N:N Produtor ↔ Cooperativa |
+
+### Tabelas do banco NÃO gerenciadas por esta API
+
+As tabelas abaixo existem no mesmo schema Oracle, mas são manipuladas exclusivamente pela **API Java**:
+
+| Tabela Oracle | Responsável | Descrição |
+|---|---|---|
+| `DISPOSITIVO_IOT` | Java | Sensores ESP32 instalados nas propriedades |
+| `LEITURA_CLIMA` | Java | Leituras de umidade do solo enviadas via MQTT |
+| `LEITURA_LUZ` | Java | Leituras de luminosidade enviadas via MQTT |
+| `ALERTA` | Java | Alertas gerados pelo motor de regras de irrigação |
 
 ---
 
@@ -111,7 +140,9 @@ HyDrata_Vitalis/
 
 ### 1:N — Produtor → Propriedades
 
-Um produtor pode ter várias propriedades. Cada propriedade pertence a exatamente um produtor. Configurado com `OnDelete(Restrict)` — não é possível deletar um produtor que possua propriedades vinculadas.
+Um produtor pode ter várias propriedades. Cada propriedade pertence a exatamente um produtor. Configurado com `OnDelete(Restrict)` — a exclusão de um produtor que possua propriedades vinculadas é bloqueada.
+
+> ⚠️ O `Delete` do `ProdutorRepository` executa um bloco PL/SQL que remove em cascata os registros dependentes nas tabelas Java (`ALERTA`, `LEITURA_CLIMA`, `LEITURA_LUZ`, `DISPOSITIVO_IOT`, `PROPRIEDADE`) antes de remover o produtor, garantindo integridade mesmo sem cascade configurado no EF.
 
 ### 1:N — Plano → Propriedades
 
@@ -119,7 +150,7 @@ Um plano pode ser usado por várias propriedades. Configurado com `OnDelete(Rest
 
 ### N:N — Produtor ↔ Cooperativa
 
-Um produtor pode pertencer a várias cooperativas, e uma cooperativa pode ter vários produtores. Implementado via tabela de junção `TB_PRODUTOR_COOPERATIVA` com **chave primária composta** `(ProdutorId, CooperativaId)`. Configurado com `OnDelete(Cascade)` nos dois lados — ao deletar um produtor ou cooperativa, os vínculos são removidos automaticamente.
+Um produtor pode pertencer a várias cooperativas, e vice-versa. Implementado via tabela de junção `PRODUTOR_COOPERATIVA` com **chave primária composta** `(ProdutorId, CooperativaId)`. Configurado com `OnDelete(Cascade)` — ao deletar um produtor ou cooperativa, as associações são removidas automaticamente.
 
 ---
 
@@ -128,47 +159,28 @@ Um produtor pode pertencer a várias cooperativas, e uma cooperativa pode ter v�
 ### Pré-requisitos
 
 - [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-- Oracle DB (local via Docker ou instância disponível)
-- [EF Core CLI](https://learn.microsoft.com/en-us/ef/core/cli/dotnet): `dotnet tool install --global dotnet-ef`
+- Acesso ao Oracle (FIAP ou instância própria)
 
-### 1. Subir o Oracle com Docker
-
-```bash
-docker run -d \
-  --name oracle-hydrata \
-  -p 1521:1521 \
-  -e ORACLE_PASSWORD=oracle \
-  gvenzl/oracle-free:latest
-```
-
-Aguarde ~60s até o container estar pronto:
+### 1. Clonar o repositório
 
 ```bash
-docker logs -f oracle-hydrata | grep "DATABASE IS READY"
+git clone https://github.com/seu-usuario/GLOBAL-SOLUTION-2ANO-1SEM-Csharp.git
+cd GLOBAL-SOLUTION-2ANO-1SEM-Csharp
 ```
 
-### 2. Configurar a Connection String
+### 2. Configurar a connection string
 
-Edite `appsettings.json`:
+O projeto já vem configurado com a connection string do Oracle da FIAP em `appsettings.json`. Para usar outro banco, edite:
 
 ```json
 {
   "ConnectionStrings": {
-    "OracleConnection": "Data Source=localhost:1521/FREE;User Id=SYSTEM;Password=SUA_SENHA_AQUI;"
+    "OracleConnection": "Data Source=oracle.fiap.com.br:1521/orcl;User Id=SEU_RM;Password=SUA_SENHA;"
   }
 }
 ```
 
-### 3. Aplicar as Migrations
-
-```bash
-cd HyDrata_Vitalis
-
-dotnet ef migrations add InitialCreate
-dotnet ef database update
-```
-
-### 4. Executar a API
+### 3. Executar a API
 
 ```bash
 dotnet run
@@ -176,30 +188,33 @@ dotnet run
 
 Acesse o Swagger em: **http://localhost:5000/swagger**
 
+> As tabelas já existem no Oracle da FIAP (criadas pelo time de Banco de Dados). Não é necessário rodar migrations manualmente — o schema é compartilhado com a API Java.
+
 ---
 
 ## Migrations
 
-O EF Core rastreia todas as mudanças no schema via migrations. Cada `dotnet ef migrations add <Nome>` gera um arquivo C# com os comandos SQL correspondentes.
+As migrations estão incluídas no repositório (`Migrations/`). Caso precise recriar o schema em um banco próprio:
 
 ```bash
+# Instalar o EF CLI (uma vez, global)
+dotnet tool install --global dotnet-ef
+
+# Aplicar as migrations no banco configurado no appsettings.json
+dotnet ef database update
+
 # Criar nova migration após alterar um Model
 dotnet ef migrations add NomeDaMudanca
 
-# Aplicar no banco
-dotnet ef database update
-
-# Reverter para uma migration anterior (rollback)
+# Reverter para uma migration anterior
 dotnet ef database update NomeDaMigrationAnterior
 
 # Remover a última migration (se ainda não foi aplicada)
 dotnet ef migrations remove
 
-# Listar todas as migrations e seu status
+# Listar status das migrations
 dotnet ef migrations list
 ```
-
-As migrations ficam na pasta `Migrations/` e devem ser commitadas no repositório.
 
 ---
 
@@ -207,54 +222,55 @@ As migrations ficam na pasta `Migrations/` e devem ser commitadas no repositóri
 
 ### Produtores — `/api/produtores`
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/produtores` | Lista todos os produtores |
-| `GET` | `/api/produtores/{id}` | Busca produtor por ID |
-| `GET` | `/api/produtores/{id}/propriedades` | Produtor com suas propriedades vinculadas |
-| `POST` | `/api/produtores` | Cadastra novo produtor |
-| `PUT` | `/api/produtores/{id}` | Atualiza produtor |
-| `DELETE` | `/api/produtores/{id}` | Remove produtor |
+| Método | Rota | Status de sucesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/produtores` | 200 | Lista todos os produtores |
+| `GET` | `/api/produtores/{id}` | 200 | Busca produtor por ID |
+| `GET` | `/api/produtores/{id}/propriedades` | 200 | Produtor com suas propriedades e planos vinculados |
+| `GET` | `/api/produtores/email/{email}` | 200 | Busca produtor por e-mail |
+| `POST` | `/api/produtores` | 201 | Cadastra novo produtor |
+| `PUT` | `/api/produtores/{id}` | 200 | Atualiza dados do produtor |
+| `DELETE` | `/api/produtores/{id}` | 204 | Remove produtor e todos os seus dados dependentes |
 
 ### Cooperativas — `/api/cooperativas`
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/cooperativas` | Lista todas |
-| `GET` | `/api/cooperativas/{id}` | Busca por ID |
-| `POST` | `/api/cooperativas` | Cadastra nova |
-| `PUT` | `/api/cooperativas/{id}` | Atualiza |
-| `DELETE` | `/api/cooperativas/{id}` | Remove |
+| Método | Rota | Status de sucesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/cooperativas` | 200 | Lista todas |
+| `GET` | `/api/cooperativas/{id}` | 200 | Busca por ID |
+| `POST` | `/api/cooperativas` | 201 | Cadastra nova |
+| `PUT` | `/api/cooperativas/{id}` | 200 | Atualiza |
+| `DELETE` | `/api/cooperativas/{id}` | 204 | Remove (associações são removidas em cascata) |
 
 ### Planos — `/api/planos`
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/planos` | Lista todos |
-| `GET` | `/api/planos/{id}` | Busca por ID |
-| `POST` | `/api/planos` | Cadastra novo |
-| `PUT` | `/api/planos/{id}` | Atualiza |
-| `DELETE` | `/api/planos/{id}` | Remove |
+| Método | Rota | Status de sucesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/planos` | 200 | Lista todos |
+| `GET` | `/api/planos/{id}` | 200 | Busca por ID |
+| `POST` | `/api/planos` | 201 | Cadastra novo |
+| `PUT` | `/api/planos/{id}` | 200 | Atualiza |
+| `DELETE` | `/api/planos/{id}` | 204 | Remove (falha se houver propriedades usando o plano) |
 
 ### Propriedades — `/api/propriedades`
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/propriedades` | Lista todas (aceita `?produtorId=1`) |
-| `GET` | `/api/propriedades/{id}` | Busca por ID |
-| `POST` | `/api/propriedades` | Cadastra nova |
-| `PUT` | `/api/propriedades/{id}` | Atualiza |
-| `DELETE` | `/api/propriedades/{id}` | Remove |
+| Método | Rota | Status de sucesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/propriedades` | 200 | Lista todas (aceita `?produtorId=1` para filtrar) |
+| `GET` | `/api/propriedades/{id}` | 200 | Busca por ID (retorna nome do produtor e do plano) |
+| `POST` | `/api/propriedades` | 201 | Cadastra nova (valida se produtor e plano existem) |
+| `PUT` | `/api/propriedades/{id}` | 200 | Atualiza |
+| `DELETE` | `/api/propriedades/{id}` | 204 | Remove |
 
 ### Associações Produtor-Cooperativa — `/api/produtorcooperativa`
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/produtorcooperativa` | Lista todas as associações |
-| `GET` | `/api/produtorcooperativa/produtor/{id}` | Cooperativas de um produtor |
-| `GET` | `/api/produtorcooperativa/cooperativa/{id}` | Produtores de uma cooperativa |
-| `POST` | `/api/produtorcooperativa` | Cria associação |
-| `DELETE` | `/api/produtorcooperativa/{prodId}/{coopId}` | Remove associação |
+| Método | Rota | Status de sucesso | Descrição |
+|---|---|---|---|
+| `GET` | `/api/produtorcooperativa` | 200 | Lista todas as associações |
+| `GET` | `/api/produtorcooperativa/produtor/{produtorId}` | 200 | Cooperativas de um produtor |
+| `GET` | `/api/produtorcooperativa/cooperativa/{cooperativaId}` | 200 | Produtores de uma cooperativa |
+| `POST` | `/api/produtorcooperativa` | 201 | Associa produtor a cooperativa |
+| `DELETE` | `/api/produtorcooperativa/{produtorId}/{cooperativaId}` | 204 | Remove associação |
 
 ---
 
@@ -266,11 +282,22 @@ As migrations ficam na pasta `Migrations/` e devem ser commitadas no repositóri
 curl -X POST http://localhost:5000/api/planos \
   -H "Content-Type: application/json" \
   -d '{
-    "nome": "Plano Básico",
-    "valorMensalidade": 99.90,
-    "descricao": "Monitoramento de até 3 sensores",
+    "nome": "Pro",
+    "valorMensalidade": 99.00,
+    "descricao": "Plano Básico + kit sensor ESP32 + suporte",
     "status": "ATIVO"
   }'
+```
+
+Resposta `201 Created`:
+```json
+{
+  "id": 1,
+  "nome": "Pro",
+  "valorMensalidade": 99.00,
+  "descricao": "Plano Básico + kit sensor ESP32 + suporte",
+  "status": "ATIVO"
+}
 ```
 
 ### Criar um Produtor
@@ -286,6 +313,11 @@ curl -X POST http://localhost:5000/api/produtores \
     "senha": "senha123",
     "status": "ATIVO"
   }'
+```
+
+CPF ou e-mail duplicado retorna `409 Conflict`:
+```json
+{ "erro": "CPF '123.456.789-00' já está cadastrado." }
 ```
 
 ### Criar uma Cooperativa
@@ -319,6 +351,11 @@ curl -X POST http://localhost:5000/api/propriedades \
   }'
 ```
 
+Produtor ou plano inexistente retorna `404 Not Found`:
+```json
+{ "erro": "Produtor com ID 99 não encontrado." }
+```
+
 ### Associar Produtor a Cooperativa
 
 ```bash
@@ -330,10 +367,38 @@ curl -X POST http://localhost:5000/api/produtorcooperativa \
   }'
 ```
 
-### Buscar Produtor com suas Propriedades
+Associação duplicada retorna `409 Conflict`:
+```json
+{ "erro": "Esse produtor já está associado a essa cooperativa." }
+```
+
+### Listar propriedades de um produtor
+
+```bash
+curl "http://localhost:5000/api/propriedades?produtorId=1"
+```
+
+### Buscar produtor com propriedades e planos
 
 ```bash
 curl http://localhost:5000/api/produtores/1/propriedades
+```
+
+Resposta inclui o plano de cada propriedade:
+```json
+{
+  "id": 1,
+  "nome": "João da Silva",
+  "propriedades": [
+    {
+      "id": 1,
+      "nome": "Fazenda Boa Vista",
+      "areaHectares": 250.5,
+      "status": "ATIVA",
+      "plano": { "id": 1, "nome": "Pro" }
+    }
+  ]
+}
 ```
 
 ### Remover Associação N:N
@@ -349,19 +414,64 @@ curl -X DELETE http://localhost:5000/api/produtorcooperativa/1/1
 
 | Entidade deletada | O que acontece |
 |---|---|
-| **Produtor** | ❌ Bloqueado se tiver propriedades (`Restrict`). Associações com cooperativas são removidas automaticamente (`Cascade`). |
-| **Cooperativa** | As associações com produtores são removidas automaticamente (`Cascade`). |
-| **Plano** | ❌ Bloqueado se houver propriedades usando o plano (`Restrict`). |
-| **Propriedade** | ✅ Removida diretamente, sem impacto em outras tabelas. |
-| **Associação Produtor-Cooperativa** | ✅ Removida diretamente — produtor e cooperativa permanecem. |
-
-O código Oracle para violação de FK é **ORA-02292**, tratado nos controllers com `409 Conflict`.
+| **Produtor** | Remove em cascata via PL/SQL: alertas, leituras (clima e luz), dispositivos IoT, propriedades e associações com cooperativas são deletados antes do produtor. |
+| **Cooperativa** | Associações com produtores são removidas automaticamente (`Cascade` no EF). |
+| **Plano** | ❌ Bloqueado com `409 Conflict` se houver propriedades usando o plano (`ORA-02292`). |
+| **Propriedade** | Removida diretamente, sem impacto nas outras tabelas de gestão. |
+| **Associação Produtor-Cooperativa** | Removida diretamente — produtor e cooperativa permanecem intactos. |
 
 ---
 
 ## Validações de Negócio
 
-- **CPF único:** não é possível cadastrar dois produtores com o mesmo CPF (`409 Conflict`)
-- **E-mail único:** não é possível cadastrar dois produtores com o mesmo e-mail (`409 Conflict`)
-- **FK de Produtor/Plano:** ao criar uma propriedade, o sistema verifica se o `ProdutorId` e o `PlanoId` existem antes de inserir (`404 Not Found`)
-- **Associação duplicada:** não é possível associar o mesmo produtor à mesma cooperativa duas vezes (`409 Conflict`)
+| Regra | Resposta |
+|---|---|
+| CPF duplicado ao cadastrar produtor | `409 Conflict` |
+| E-mail duplicado ao cadastrar/atualizar produtor | `409 Conflict` |
+| `ProdutorId` inexistente ao criar propriedade | `404 Not Found` |
+| `PlanoId` inexistente ao criar/atualizar propriedade | `404 Not Found` |
+| `ProdutorId` ou `CooperativaId` inexistente ao associar | `404 Not Found` |
+| Associação Produtor-Cooperativa duplicada | `409 Conflict` |
+| Plano em uso ao tentar deletar | `409 Conflict` |
+
+---
+
+## Docker
+
+O projeto inclui `Dockerfile` com build multistage (build em SDK → runtime em Alpine), usuário não-root e porta 5000 exposta:
+
+```bash
+# Build da imagem
+docker build -t hydrata-gestao-api .
+
+# Executar o container
+docker run -d \
+  --name hydrata-gestao \
+  -p 5000:5000 \
+  -e ConnectionStrings__OracleConnection="Data Source=oracle.fiap.com.br:1521/orcl;User Id=SEU_RM;Password=SUA_SENHA;" \
+  hydrata-gestao-api
+```
+
+Acesse o Swagger em: **http://localhost:5000/swagger**
+
+---
+
+## Integrantes
+
+**Turma:** 2TDSpV
+
+| Nome | RM |
+|---|---|
+| Ana Flavia Camelo | RM561489 |
+| Gustavo Kenji Terada | RM562745 |
+| João Guilherme Carvalho Novaes | RM566234 |
+| Pedro Chasci Puga | RM565154 |
+| Lucas Figueiredo Vieira | RM561342 |
+
+---
+
+## Modelagem de Dados Completa
+
+
+
+*HyDrata — Global Solution 2026/1 — FIAP — Análise e Desenvolvimento de Sistemas*
